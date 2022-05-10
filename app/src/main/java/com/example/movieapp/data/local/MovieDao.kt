@@ -9,7 +9,7 @@ import com.example.movieapp.data.model.MovieEntity
 @Dao
 interface MovieDao {
 
-    @Query("SELECT * FROM movie_entity")
+    @Query("SELECT * FROM movie_table")
     suspend fun getAllMovies(): List<MovieEntity>
 
     @Insert(onConflict = OnConflictStrategy.REPLACE) // Remplaza el registro que ya contenga un id igual

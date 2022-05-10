@@ -10,6 +10,8 @@ import androidx.navigation.fragment.findNavController
 import androidx.recyclerview.widget.ConcatAdapter
 import com.example.movieapp.R
 import com.example.movieapp.core.Resource
+import com.example.movieapp.data.local.AppDataBase
+import com.example.movieapp.data.local.LocalMovieDataSource
 import com.example.movieapp.data.model.Movie
 import com.example.movieapp.data.remote.RemoteMovieDataSource
 import com.example.movieapp.databinding.FragmentMovieBinding
@@ -26,7 +28,12 @@ class MovieFragment : Fragment(R.layout.fragment_movie), MovieAdapter.OnMovieCli
 
     private lateinit var binding: FragmentMovieBinding
     private val viewModel by viewModels<MovieViewModel> {// by indica delegación para crear la instancia
-        MovieViewModelFactory(MovieRepositoryImpl(RemoteMovieDataSource(RetrofitClient.webService))) // Inyección de dependencias manual
+        MovieViewModelFactory(
+            MovieRepositoryImpl(
+                RemoteMovieDataSource(RetrofitClient.webService),
+                LocalMovieDataSource(AppDataBase.getDataBase(requireContext()).movieDao())
+            )
+        ) // Inyección de dependencias manual
     }
 
     private lateinit var concatAdapter: ConcatAdapter
@@ -37,17 +44,41 @@ class MovieFragment : Fragment(R.layout.fragment_movie), MovieAdapter.OnMovieCli
 
         concatAdapter = ConcatAdapter()
 
-        viewModel.fetchMainScreenMovies().observe( viewLifecycleOwner, Observer { result ->
-            when(result) {
+        viewModel.fetchMainScreenMovies().observe(viewLifecycleOwner, Observer { result ->
+            when (result) {
                 is Resource.Loading -> {
                     binding.progressBar.visibility = View.VISIBLE
                 }
                 is Resource.Success -> {
                     binding.progressBar.visibility = View.GONE
                     concatAdapter.apply {
-                        addAdapter(0, UpcomingConcatAdapter(MovieAdapter(result.data.first.results, this@MovieFragment)))
-                        addAdapter(0, TopRatedConcatAdapter(MovieAdapter(result.data.second.results, this@MovieFragment)))
-                        addAdapter(0, PopularConcatAdapter(MovieAdapter(result.data.third.results, this@MovieFragment)))
+                        addAdapter(
+                            0,
+                            UpcomingConcatAdapter(
+                                MovieAdapter(
+                                    result.data.first.results,
+                                    this@MovieFragment
+                                )
+                            )
+                        )
+                        addAdapter(
+                            0,
+                            TopRatedConcatAdapter(
+                                MovieAdapter(
+                                    result.data.second.results,
+                                    this@MovieFragment
+                                )
+                            )
+                        )
+                        addAdapter(
+                            0,
+                            PopularConcatAdapter(
+                                MovieAdapter(
+                                    result.data.third.results,
+                                    this@MovieFragment
+                                )
+                            )
+                        )
                     }
                     Log.d("LiveData", "Upcoming: ${result.data.first}")
                     Log.d("LiveData", "TopRated: ${result.data.second}")
